@@ -1,0 +1,337 @@
+#!/bin/bash
+
+#################################
+classictemplate='
+Boot options:-
+F1 help    : 
+F2 language: 
+F3 800x600 : 
+F4 CD-ROM  : 
+F5 Driver  : 
+F6 Kernel Option: 
+
+Boot from hard disk: 
+Rescue : 
+Memtest: 
+HDT    : 
+(Hardware Detection Tool)
+'
+
+#################################
+dvdtemplate='
+
+Installer Issues:-
+
+
+After reboot:-
+KDE install:
+
+
+GNOME/GNOME classic install:
+
+
+XFCE install:
+
+
+Cinnamon install:
+
+
+Mate install:
+
+
+LXDE install:
+
+
+Upgrade install:-
+
+
+'
+
+################################
+dualtemplate='
+
+Installer issues:-
+32bit:
+
+
+64bit:
+
+
+XFCE Install:-
+32bit:
+
+
+64bit:
+
+
+After Install and reboot:-
+32bit:
+
+
+64bit:
+
+
+Upgrade install:-
+
+
+'
+
+##################################
+livetemplate='
+
+Boot options:-
+F1 Help     : 
+F2 Language : 
+F3 800 x 600: 
+F4 CD-Rom   : 
+F5 Driver   : 
+F6 Kernel Option: 
+
+Boot Mageia 5: 
+Install Mageia 5: 
+Boot from Hard Disk: 
+
+
+Live mode:-
+
+
+Install from live mode:-
+
+
+Install non-live mode:-
+
+
+After install and reboot:-
+
+
+'
+
+#################################
+newpadstuff='
+This is the pad for (Which?) release
+====================================
+
+Some small notes about usage are at the foot of this document
+A template of this page is saved here: (Where?)
+Archived comments: (Where?)
+
+As requested on IRC, a simple procedure for archiving is:
+https://wiki.mageia.org/en/Pre-release_ISO_testing#Maintaining_the_preliminary_notepad
+
+If you find the same remarks in build X and build X+1, you can easily copy and paste such
+remarks back to the current build data.
+
+
+>>>  Please  click the head at the top right corner, pick a colour a bit  <<<
+>>>  different from others and add your name, even if you dont test, so   <<<
+>>>  authorship is apparent.                                              <<<
+
+
+How to get new isos to help test them
+======================================
+Follow the instructions here: https://wiki.mageia.org/en/QA_ISO_testers
+To contact QA Team: IRC channel #mageia-qa on irc.freenode.net or qa-discuss mailing list.
+
+If you use the previous ISOs as base, rename them  before you sync, so as to make as little
+use as needed of your own time and allowed Megabytes and avoid overly accessing the Mageia
+server. This is *not* necessary if you use either rsync manually, python-mageiasync or myrsync.sh
+
+For example:
+
+$ echo $SHELL
+/bin/bash    # Make sure you run these in a bash shell; they do not work in tcsh.
+
+$ find . -type d -exec rename (get this from the email) {} +
+$ find . -type f -exec rename (get this from the email) {} +
+
+
+For assistance downloading the isos there are:
+
+1. dorsync script: http://gitweb.mageia.org/qa/dorsync/about/
+   can be easily downloaded via $ wget https://dl.dropboxusercontent.com/u/4147101/QA/dorsync
+
+2. the GUI package python-mageiasync, which can be downloaded from the repositories.
+
+3. and a script for doing just 1 ISO at a time, which requires no local re-naming: myrsync.sh available
+   from Lewis. (Ask on qa-discuss)
+
+As requested in IRC some rsync commands for reference are here:
+https://wiki.mageia.org/en/Pre-release_ISO_testing#brief_rsync_note
+
+Kindly keep always the isos for simple rsync in the next round: it saves you data, time and Megabyte usage,
+and would otherwise seriously reduce the Mageia server bandwidth. Same applies after final release.
+
+Remember to create bug reports for issues you find and note the bug numbers in your comments here please.
+Bugs should be created against "Cauldron" and please add "(What?)" into the Whiteboard field so they are
+easy to track.
+Please report in full, not referring to this pad (this pad changes at every build, and more important than
+that: it is not constant).
+
+
+Testers & other visitors
+========================
+
+Please make a note here which ISO(s) you are testing / record your name or alias, to show your
+text colour, so authorship of all notes is obvious.
+
+
+Build 1: (Add what was built and dates from DATE.txt)
+
+
+
+
+
+Errata:
+
+
+
+'
+#################################
+help='
+
+This script will output templated info to paste into the pad.
+
+There are several options to choose from:
+
+  -h
+      help (Shows this).
+
+  -p <path>
+
+      Path to where the ISOs are stored. Use quotes if there are spaces.
+      If omitted it looks in the current directory.
+  -a
+      Create info for all ISOs.
+  -c
+      Create info for Classic ISOs.
+  -l
+      Create info for Live ISOs
+  -n
+      Creates a complete set of info for a whole new pad. Includes the bit at
+      the top with all the usage information and info for all the ISOs.
+
+By default it sends output to STDOUT so you may wish to redirect it to a file.
+eg.  padinfo -a > ~/somefile.txt
+ 
+'
+
+#####################################
+
+p="./"
+yesall=false
+yesclassics=false
+yeslives=false
+yesnew=false
+
+#####################################
+
+# Using arrays as it'd be nice to have an interactive mode later
+ 
+doheader () {
+  isodir="$1"
+  isoiso="$2"
+  echo "$isodir"
+  echo "--------------------------------------------------"
+  echo "ISO Name: $isoiso"
+  echo -e "DATE.txt: \c"
+  cat "$p$isodir/DATE.txt" 
+  echo -e "md5sum:   \c"
+  cat "$p$isodir/$isoiso.md5" | cut -d" " -f1
+  echo -e "sha1sum:  \c"
+  cat "$p$isodir/$isoiso.sha1" | cut -d" " -f1
+}
+
+doclassicisos () {
+  i=0
+  OIFS="$IFS"
+  IFS=$'\n'
+  echo -e "==================== Classic ISOs ====================\n\n\n"
+  # Sorted list of classic isos
+  for classic in $(find $p -type f \( ! -name "*Live*" \) -and \( -name "Mageia*.iso" \) -printf '%P\n' | sort)
+  do
+    classicdir[$i]=$(dirname "$classic")
+    classiciso[$i]=$(basename "$classic")
+    doheader "${classicdir[$i]}" "${classiciso[$i]}"
+    echo -e "$classictemplate"
+    if [[ "${classicdir[$i]}" = *dual* ]]; then
+      echo -e "$dualtemplate"
+    else
+      echo -e "$dvdtemplate"
+    fi 
+    (( i++ ))
+  done
+  IFS="$OIFS"
+}
+
+doliveisos () {
+  i=0
+  OIFS="$IFS"
+  IFS=$'\n'
+  echo -e "===================== Live ISOs =====================\n\n\n"
+  # Sorted list of live isos
+  for live in $(find $p -type f -name "Mageia*Live*.iso" -printf '%P\n' | sort)
+  do
+    livedir[$i]=$(dirname "$live")
+    liveiso[$i]=$(basename "$live")
+    doheader "${livedir[$i]}" "${liveiso[$i]}"
+    echo -e "$livetemplate"
+    (( i++ ))
+  done
+  IFS="$OIFS"
+}
+
+while getopts ":hp:acln" opt; do
+  case $opt in
+    h)
+      echo -e "$help"
+      exit
+      ;;
+    p)
+      p="$OPTARG/"
+      ;;
+    a)
+      yesall=true
+      ;;
+    c)
+      yesclassics=true
+      ;;
+    l)
+      yeslives=true
+      ;;
+    n)
+      yesnew=true
+      ;;
+    \?)
+      echo -e "Invalid option: -$OPTARG (Use -h for help)\n" >&2
+      exit 1
+      ;;
+    :)
+      echo -e "Option -$OPTARG requires an argument. (Use -h for help)\n" >&2
+      exit 1
+      ;;
+    *)
+      echo -e "Try -h for help.\n" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ $yesnew = true ]; then
+  echo -e  "$newpadstuff"
+  doclassicisos
+  doliveisos
+  exit
+fi
+if [ $yesall = true ]; then
+  doclassicisos
+  doliveisos
+  exit
+fi
+if [ $yesclassics = true ]; then
+  doclassicisos
+  exit
+fi
+if [ $yeslives = true ]; then
+  doliveisos
+  exit
+fi
